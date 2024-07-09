@@ -2,8 +2,6 @@ import bpy
 import bmesh
 import random
 
-print("\n\n\n\n\n\n\n\n\n")
-
 bl_info = {
     "name" : "ColorPainter",
     "description" : "Randomized collor apply",
@@ -47,26 +45,56 @@ class TLA_OT_operator(Operator):
             return {'FINISHED'}
         
         for obj in bpy.context.selected_editable_objects:
-            #bm = bmesh.new();
-            #bm.from_mesh(obj.data);
+            mesh = obj.data
+            attribute = None;
+            for i,a in enumerate(mesh.color_attributes):
+                if a.name == 'Color':
+                    attribute = a;
+            if attribute == None:
+                attribute = mesh.color_attributes.new(name="Color", type="BYTE_COLOR", domain="CORNER")
+            
+            bpy.ops.object.mode_set(mode='OBJECT')
+            
+            attribute_values_old = [];
+            attribute = None;
+            for i,a in enumerate(mesh.color_attributes):
+                if a.name == 'Color':
+                    attribute = a;
+            
+            for i in range(len(attribute.data)):
+                c = getattr(attribute.data[i], "color");
+                for j in c:
+                    attribute_values_old.append(j);
+            
+            bpy.ops.object.mode_set(mode='EDIT')
+            
             bm = bmesh.from_edit_mesh(obj.data);
             
-            print("Mesh next: ", obj)
-            
-            color = None;
-            for i,j in enumerate(bm.faces.layers.color):
-                if j.name == 'Color':
-                    color = j;
-            if color == None:
-                color = bm.faces.layers.color.new('Color')
-            
+            offset = 0;
             for j,f in enumerate(bm.faces):
+                c = (0,0,0,1);
                 if f.select:
-                    f[color] = self.GetRandomColor(context)
-            
-            bmesh.update_edit_mesh(bpy.context.object.data)
-     
+                    c = self.GetRandomColor(context);
+                    for j,v in enumerate(f.verts):
+                        for X in c:
+                            attribute_values_old[offset] = X;
+                            offset = offset + 1;
+                else:
+                    for j,v in enumerate(f.verts):
+                        offset = offset + 4;
             bm.free()
+            
+            bpy.ops.object.mode_set(mode='OBJECT')
+     
+            mesh = obj.data
+            attribute = None;
+            for i,a in enumerate(mesh.color_attributes):
+                if a.name == 'Color':
+                    attribute = a;
+            
+            attribute.data.foreach_set("color", attribute_values_old);
+                   
+            bpy.ops.object.mode_set(mode='EDIT')
         return {'FINISHED'}
 
 class TLA_PT_sidebar(Panel):
@@ -121,7 +149,7 @@ def register():
         min=0.0,
         max=1.0
     )
-        
+
 def unregister():
     del bpy.types.Scene.my_float
     del bpy.types.Scene.my_bool
@@ -131,4 +159,3 @@ def unregister():
 
 if __name__ == '__main__':
     register()
-
