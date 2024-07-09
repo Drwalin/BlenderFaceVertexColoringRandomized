@@ -34,8 +34,8 @@ class TLA_OT_operator(Operator):
         ts = context.tool_settings;
         ups = ts.unified_paint_settings;
         ptr = ups if ups.use_unified_color else ts.image_paint.brush;
-        c = ptr.color.copy();
-        c.h += context.scene.HueVariation * (random.random()*2.0 - 1.0);
+        c = ptr.color.copy().from_srgb_to_scene_linear();
+        c.h += context.scene.HueVariation * (random.random() - 0.5);
         c.s += context.scene.SaturationVariation * (random.random()*2.0 - 1.0);
         c.v += context.scene.LuminosityVariation * (random.random()*2.0 - 1.0);
         return (c.r, c.g, c.b, 1);
